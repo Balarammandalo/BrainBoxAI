@@ -8,6 +8,10 @@ import authRoutes from "./routes/authRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import marketRoutes from "./routes/marketRoutes.js";
+import codingRoutes from "./routes/codingRoutes.js";
+import booksRoutes from "./routes/booksRoutes.js";
+import learningResourcesRoutes from "./routes/learningResourcesRoutes.js";
+import enhancedPlanRoutes from "./routes/enhancedPlanRoutes.js";
 
 const app = express();
 
@@ -16,7 +20,6 @@ const MONGODB_URI =process.env.MONGO_URI;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
 
 if (!MONGODB_URI) {
-  console.log(MONGODB_URI)
   throw new Error("MONGO_URI is not set in environment variables");
 }
 
@@ -35,8 +38,12 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/plans", planRoutes);
+app.use("/api/plans", enhancedPlanRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/market", marketRoutes);
+app.use("/api/coding", codingRoutes);
+app.use("/api/books", booksRoutes);
+app.use("/api/learning-resources", learningResourcesRoutes);
 
 app.use((err, req, res, next) => {
   const status = err.statusCode || 500;

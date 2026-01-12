@@ -13,6 +13,7 @@ function toPublicUser(user) {
     name: user.name,
     email: user.email,
     learningGoals: user.learningGoals || [],
+    resumeGoal: !!user.resumeGoal,
   };
 }
 
@@ -36,6 +37,7 @@ router.post("/signup", async (req, res, next) => {
       email: String(email).toLowerCase(),
       passwordHash,
       learningGoals: [],
+      resumeGoal: false,
     });
 
     const token = signToken({ id: user._id });
@@ -94,11 +96,12 @@ router.get("/me", requireAuth, async (req, res, next) => {
 
 router.patch("/me", requireAuth, async (req, res, next) => {
   try {
-    const { name, learningGoals } = req.body || {};
+    const { name, learningGoals, resumeGoal } = req.body || {};
 
     const updates = {};
     if (typeof name === "string" && name.trim()) updates.name = name.trim();
     if (Array.isArray(learningGoals)) updates.learningGoals = learningGoals;
+    if (typeof resumeGoal === "boolean") updates.resumeGoal = resumeGoal;
 
     const user = await User.findByIdAndUpdate(req.user.id, updates, { new: true });
     if (!user) {

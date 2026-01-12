@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { apiGet, apiPatch, apiPost } from "../lib/api";
+import CodingPractice from "../components/CodingPractice";
+import BooksAndPdfs from "../components/BooksAndPdfs";
+import PlanTodoList from "../components/PlanTodoList";
+import LearningResources from "../components/LearningResources";
 
 export default function MyPlan() {
   const { user, setUser } = useAuth();
@@ -83,7 +87,7 @@ export default function MyPlan() {
     setSubmitting(true);
 
     try {
-      const data = await apiPost("/api/plans/generate", {
+      const data = await apiPost("/api/plans/generate-enhanced", {
         goal,
         timeToComplete,
         dailyStudyTime,
@@ -288,6 +292,20 @@ export default function MyPlan() {
                         {p.duration || p.timeToComplete} • {p.dailyTime || p.dailyStudyTime}/day
                       </p>
 
+                      {/* Progress Bar */}
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-600 dark:text-slate-300">Progress</span>
+                          <span className="font-bold text-indigo-600">{p.progressPercent || 0}%</span>
+                        </div>
+                        <div className="mt-1 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+                          <div 
+                            className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 transition-all duration-500"
+                            style={{ width: `${p.progressPercent || 0}%` }}
+                          />
+                        </div>
+                      </div>
+
                       <div className="mt-3 flex flex-wrap gap-2">
                         {(p.resourceTypes || []).includes("video") ? (
                           <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
@@ -331,7 +349,7 @@ export default function MyPlan() {
                   <div className="mt-5 flex flex-wrap gap-2">
                     {[
                       "Plan",
-                      "Resources",
+                      "Resources", 
                       "Coding",
                       "Books",
                       "Jobs",
@@ -348,203 +366,19 @@ export default function MyPlan() {
                   </div>
 
                   {getActiveTab(p._id) === "Plan" ? (
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Topics
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-                          {(p.topics || []).slice(0, 6).map((t) => (
-                            <li key={t}>- {t}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Day-wise schedule
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-                          {(p.schedule || []).slice(0, 4).map((d) => (
-                            <li key={d.day}>
-                              Day {d.day}: {d.title}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
+                    <PlanTodoList plan={p} />
                   ) : null}
 
                   {getActiveTab(p._id) === "Resources" ? (
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Notes
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-                          {(p.notes || []).slice(0, 6).map((n, idx) => (
-                            <li key={idx}>- {n}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/50">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                          Links
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
-                          {(p.resources || []).slice(0, 6).map((r) => (
-                            <li key={r.title}>
-                              <a
-                                href={r.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
-                              >
-                                {r.title}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {(p.resourcesByType?.video || []).length ? (
-                        <div className="sm:col-span-2">
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                            Video learning
-                          </p>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            {(p.resourcesByType?.video || []).slice(0, 4).map((v) => (
-                              <div
-                                key={v.title}
-                                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950"
-                              >
-                                <iframe
-                                  title={v.title}
-                                  src={v.url}
-                                  className="h-44 w-full"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                />
-                                <div className="p-3">
-                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                    {v.title}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
+                    <LearningResources plan={p} />
                   ) : null}
 
                   {getActiveTab(p._id) === "Coding" ? (
-                    <div className="mt-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          Coding Problems
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                            Difficulty
-                          </span>
-                          <select
-                            value={p.codingDifficulty || "All"}
-                            onChange={(e) => setPlanCodingDifficulty(p._id, e.target.value)}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/15 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                          >
-                            <option>All</option>
-                            <option>Easy</option>
-                            <option>Medium</option>
-                            <option>Hard</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid gap-3">
-                        {(() => {
-                          const diff = p.codingDifficulty || "All";
-                          const list = p.resourcesByType?.coding || [];
-                          const filtered = diff === "All" ? list : list.filter((x) => x.difficulty === diff);
-                          if (!filtered.length) {
-                            return (
-                              <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-900/50 dark:text-slate-200">
-                                No coding problems found for this difficulty.
-                              </div>
-                            );
-                          }
-
-                          return filtered.slice(0, 12).map((c) => (
-                            <div
-                              key={`${c.title}-${c.link}`}
-                              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                    {c.title}
-                                  </p>
-                                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                    Difficulty: {c.difficulty}
-                                  </p>
-                                </div>
-                                <a
-                                  href={c.link}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
-                                >
-                                  Open
-                                </a>
-                              </div>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    </div>
+                    <CodingPractice plan={p} user={user} />
                   ) : null}
 
                   {getActiveTab(p._id) === "Books" ? (
-                    <div className="mt-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Books</p>
-                        <Link
-                          to="/library"
-                          className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
-                        >
-                          Upload / Manage
-                        </Link>
-                      </div>
-
-                      {(p.pdfFiles || []).length ? (
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                          {(p.pdfFiles || []).slice(0, 6).map((pdf) => (
-                            <div
-                              key={pdf.id}
-                              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-                            >
-                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                {pdf.title}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                {(pdf.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                              <div className="mt-3">
-                                <Link
-                                  to={`/books/${p._id}/${pdf.id}`}
-                                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
-                                >
-                                  Read
-                                </Link>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700 dark:bg-slate-900/50 dark:text-slate-200">
-                          No PDFs uploaded for this plan yet.
-                        </div>
-                      )}
-                    </div>
+                    <BooksAndPdfs plan={p} />
                   ) : null}
 
                   {getActiveTab(p._id) === "Jobs" ? (

@@ -485,6 +485,8 @@ function App() {
                           <option>2 Months</option>
                           <option>3 Months</option>
                           <option>6 Months</option>
+                          <option>9 Months</option>
+                          <option>12 Months</option>
                         </select>
                       </div>
 
@@ -504,6 +506,9 @@ function App() {
                           <option>30 mins</option>
                           <option>1 hour</option>
                           <option>2 hours</option>
+                          <option>4 hours</option>
+                          <option>6 hours</option>
+                          <option>8 hours</option>
                         </select>
                       </div>
 
@@ -614,7 +619,7 @@ function App() {
             </div>
 
             <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map(({ title, description, Icon }) => (
+              {features.map(({ title, description }) => (
                 <div
                   key={title}
                   className="group rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-md"

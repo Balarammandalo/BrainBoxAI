@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: { type: String, required: true },
     learningGoals: { type: [String], default: [] },
+    resumeGoal: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

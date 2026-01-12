@@ -33,6 +33,56 @@ const pdfFileSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const bookSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    author: { type: String, required: true },
+    description: { type: String, default: "" },
+    thumbnail: { type: String, default: "" },
+    pdfUrl: { type: String, default: "" },
+    previewUrl: { type: String, default: "" },
+    isbn: { type: String, default: "" },
+    publishedDate: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const interviewPdfSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    filename: { type: String, required: true },
+    downloadUrl: { type: String, required: true },
+    generatedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+const todoItemSchema = new mongoose.Schema(
+  {
+    month: { type: Number, required: true },
+    title: { type: String, required: true },
+    completed: { type: Boolean, default: false },
+    completedAt: { type: Date },
+    topics: { type: [String], default: [] },
+  },
+  { _id: false }
+);
+
+const learningResourceSchema = new mongoose.Schema(
+  {
+    topic: { type: String, required: true },
+    links: [
+      {
+        platform: { type: String, required: true }, // GeeksForGeeks, W3Schools, MDN, etc.
+        title: { type: String, required: true },
+        url: { type: String, required: true },
+        description: { type: String, default: "" },
+      },
+    ],
+  },
+  { _id: false }
+);
+
 const planSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -48,12 +98,20 @@ const planSchema = new mongoose.Schema(
     },
     resourcesByType: {
       video: { type: [resourceLinkSchema], default: [] },
-      books: { type: [resourceLinkSchema], default: [] },
+      books: { type: [bookSchema], default: [] },
       coding: { type: [codingProblemSchema], default: [] },
       deep: { type: [mongoose.Schema.Types.Mixed], default: [] },
+      interviewPdfs: { type: [interviewPdfSchema], default: [] },
+      learningResources: { type: [learningResourceSchema], default: [] },
     },
     pdfFiles: { type: [pdfFileSchema], default: [] },
-
+    
+    // TODO list structure
+    planStructure: { type: [todoItemSchema], default: [] },
+    
+    // Progress tracking
+    progressPercent: { type: Number, default: 0 },
+    
     goal: { type: String, required: true, trim: true },
     timeToComplete: { type: String, required: true },
     dailyStudyTime: { type: String, required: true },

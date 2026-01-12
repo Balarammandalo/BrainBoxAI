@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { apiGet, apiPatch } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 function IconNotes(props) {
   return (
@@ -96,9 +98,31 @@ function IconChart(props) {
 }
 
 export default function Home() {
+  const { user, refresh } = useAuth();
+
   const [goal, setGoal] = useState("");
   const [timeToComplete, setTimeToComplete] = useState("3 Months");
   const [dailyStudyTime, setDailyStudyTime] = useState("1 hour");
+  const [introVisible, setIntroVisible] = useState(() => {
+    try {
+      return !window.localStorage.getItem("bb_intro_played");
+    } catch (e) {
+      return true;
+    }
+  });
+  const videoRef = useRef(null);
+
+  const quotes = [
+    "Small progress every day leads to big success.",
+    "Your future is built by what you learn today.",
+    "Consistency compounds; keep showing up.",
+    "Learn today, lead tomorrow.",
+  ];
+  const [quoteIndex, setQuoteIndex] = useState(0);
+
+  const [stats, setStats] = useState(null);
+  const [trends, setTrends] = useState([]);
+  const [resumeGoalEnabled, setResumeGoalEnabled] = useState(!!user?.resumeGoal);
 
   const features = useMemo(
     () => [
@@ -134,8 +158,88 @@ export default function Home() {
     e.preventDefault();
   }
 
+  useEffect(() => {
+    const id = setInterval(() => setQuoteIndex((i) => (i + 1) % quotes.length), 6000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadStats() {
+      try {
+        const data = await apiGet("/api/plans/stats");
+        if (mounted) setStats(data);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    async function loadTrends() {
+      try {
+        const data = await apiGet("/api/market");
+        if (mounted) setTrends(data.trending || []);
+      } catch (e) {}
+    }
+
+    loadStats();
+    loadTrends();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setResumeGoalEnabled(!!user?.resumeGoal);
+  }, [user]);
+
+  function finishIntro() {
+    try {
+      window.localStorage.setItem("bb_intro_played", "1");
+    } catch (e) {}
+    setIntroVisible(false);
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+      } catch (e) {}
+    }
+  }
+
+  async function onToggleResumeGoal(v) {
+    setResumeGoalEnabled(v);
+    try {
+      await apiPatch("/api/auth/me", { resumeGoal: !!v });
+      refresh();
+    } catch (e) {
+      // revert on error
+      setResumeGoalEnabled((s) => !s);
+    }
+  }
+
   return (
     <div id="top">
+      {introVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="relative w-full max-w-4xl px-4">
+            <video
+              ref={videoRef}
+              className="w-full rounded-2xl shadow-xl"
+              src="/intro.mp4"
+              autoPlay
+              muted
+              playsInline
+              onEnded={finishIntro}
+            />
+            <div className="absolute right-4 top-4">
+              <button
+                onClick={finishIntro}
+                className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur hover:bg-white/20"
+              >
+                Skip Intro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-[-280px] h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-500/25 via-cyan-400/15 to-transparent blur-3xl dark:from-indigo-500/20" />
@@ -158,6 +262,18 @@ export default function Home() {
                 Enter any subject or skill and get personalized notes, resources, and a daily
                 learning schedule in seconds.
               </p>
+
+              <div className="mt-4">
+                <div className="h-10 overflow-hidden">
+                  <p
+                    key={quoteIndex}
+                    className="text-indigo-600 font-semibold text-lg transition-opacity duration-700 dark:text-cyan-300"
+                    style={{ opacity: 1 }}
+                  >
+                    {quotes[quoteIndex]}
+                  </p>
+                </div>
+              </div>
 
               <form
                 onSubmit={onGeneratePlan}
@@ -255,13 +371,34 @@ export default function Home() {
                       Neural gradient animation
                     </p>
 
-                    <div className="mt-6 space-y-2">
-                      <p className="text-lg font-semibold motion-safe:animate-quote-a">
-                        “Your future starts with what you learn today”
-                      </p>
-                      <p className="text-lg font-semibold motion-safe:animate-quote-b">
-                        “Learn smarter, not harder”
-                      </p>
+                    <div className="mt-6">
+                      <h4 className="text-sm font-semibold text-white/80">🔥 Learning Streak</h4>
+                      <div className="mt-3 flex items-center gap-4">
+                        <div className="rounded-xl bg-white/8 p-3 text-white">
+                          <div className="text-xs text-white/70">Days active</div>
+                          <div className="text-lg font-bold">{stats ? stats.daysActive : "—"}</div>
+                        </div>
+                        <div className="rounded-xl bg-white/8 p-3 text-white">
+                          <div className="text-xs text-white/70">Hours this week</div>
+                          <div className="text-lg font-bold">{stats ? stats.hoursThisWeek : "—"}</div>
+                        </div>
+                        <div className="rounded-xl bg-white/8 p-3 text-white">
+                          <div className="text-xs text-white/70">Consistency</div>
+                          <div className="text-lg font-bold">{stats ? stats.consistencyBadge : "—"}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="text-sm text-white/80">Learning for a job?</div>
+                        <label className="inline-flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={resumeGoalEnabled}
+                            onChange={(e) => onToggleResumeGoal(e.target.checked)}
+                            className="h-5 w-9 rounded-full bg-white/20 accent-indigo-500"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -279,6 +416,36 @@ export default function Home() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-8 bg-gradient-to-b from-white/50 via-indigo-25 to-transparent dark:from-slate-950/40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Trending Skills This Week</h3>
+            <p className="text-sm text-slate-500">Click a skill to fill the learning box</p>
+          </div>
+
+          <div className="mt-4 overflow-x-auto py-3">
+            <div className="flex gap-4">
+              {(trends.length ? trends : [
+                { name: 'React' },
+                { name: 'AI' },
+                { name: 'Data Science' },
+                { name: 'Cloud' },
+                { name: 'Cybersecurity' },
+              ]).map((t) => (
+                <button
+                  key={t.name}
+                  onClick={() => setGoal(t.name)}
+                  className="min-w-[160px] shrink-0 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-left shadow-sm backdrop-blur hover:scale-105 transition-transform dark:border-slate-800 dark:bg-slate-950/60"
+                >
+                  <div className="text-sm font-semibold">{t.name}</div>
+                  <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t.demand ? `${t.demand} demand` : 'Trending'}</div>
+                </button>
+              ))}
             </div>
           </div>
         </div>

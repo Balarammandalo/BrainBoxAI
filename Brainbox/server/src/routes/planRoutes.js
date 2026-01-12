@@ -7,6 +7,54 @@ import { generateStudyPlan } from "../services/mockAi.js";
 
 const router = express.Router();
 
+function parseDailyHours(str) {
+  if (!str) return 0;
+  const s = String(str).toLowerCase();
+  const hourMatch = s.match(/(\d+(?:\.\d+)?)\s*hour/);
+  if (hourMatch) return Number(hourMatch[1]);
+  const minMatch = s.match(/(\d+)\s*min/);
+  if (minMatch) return Number(minMatch[1]) / 60;
+  // fallback: try to parse number
+  const num = parseFloat(s);
+  return Number.isFinite(num) ? num : 0;
+}
+
+router.get("/stats", requireAuth, async (req, res, next) => {
+  try {
+    const plans = await Plan.find({ userId: req.user.id }).sort({ createdAt: -1 });
+
+    const now = new Date();
+    const msDay = 24 * 60 * 60 * 1000;
+
+    // days active in last 30 days: distinct createdAt dates
+    const daysSet = new Set();
+    const daysSet7 = new Set();
+    let hoursThisWeek = 0;
+
+    plans.forEach((p) => {
+      const d = new Date(p.createdAt || p.updatedAt || now);
+      const dayKey = d.toISOString().slice(0, 10);
+      const daysAgo = Math.floor((now - d) / msDay);
+      if (daysAgo <= 30) daysSet.add(dayKey);
+      if (daysAgo <= 6) daysSet7.add(dayKey);
+      if (daysAgo <= 6) {
+        hoursThisWeek += parseDailyHours(p.dailyStudyTime || p.dailyTime);
+      }
+    });
+
+    const daysActive = daysSet.size;
+    const daysActiveLast7 = daysSet7.size;
+
+    let consistencyBadge = "Bronze";
+    if (daysActiveLast7 >= 5) consistencyBadge = "Gold";
+    else if (daysActiveLast7 >= 3) consistencyBadge = "Silver";
+
+    return res.json({ daysActive, hoursThisWeek: Number(hoursThisWeek.toFixed(2)), consistencyBadge });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.get("/", requireAuth, async (req, res, next) => {
   try {
     const plans = await Plan.find({ userId: req.user.id }).sort({ createdAt: -1 });
