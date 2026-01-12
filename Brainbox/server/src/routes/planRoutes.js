@@ -18,7 +18,7 @@ router.get("/", requireAuth, async (req, res, next) => {
 
 router.post("/generate", requireAuth, async (req, res, next) => {
   try {
-    const { goal, timeToComplete, dailyStudyTime } = req.body || {};
+    const { goal, timeToComplete, dailyStudyTime, resourceTypes } = req.body || {};
 
     if (!goal || !timeToComplete || !dailyStudyTime) {
       return res
@@ -26,10 +26,15 @@ router.post("/generate", requireAuth, async (req, res, next) => {
         .json({ message: "goal, timeToComplete, dailyStudyTime are required" });
     }
 
-    const ai = generateStudyPlan({ goal, timeToComplete, dailyStudyTime });
+    const ai = generateStudyPlan({ goal, timeToComplete, dailyStudyTime, resourceTypes });
 
     const plan = await Plan.create({
       userId: req.user.id,
+      skill: ai.skill || String(goal || ""),
+      duration: ai.duration || timeToComplete,
+      dailyTime: ai.dailyTime || dailyStudyTime,
+      resourceTypes: Array.isArray(resourceTypes) ? resourceTypes : ai.resourceTypes || [],
+      resourcesByType: ai.resourcesByType || undefined,
       goal,
       timeToComplete,
       dailyStudyTime,
@@ -42,6 +47,31 @@ router.post("/generate", requireAuth, async (req, res, next) => {
     await User.findByIdAndUpdate(req.user.id, { $addToSet: { learningGoals: goal } });
 
     return res.status(201).json({ plan });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.patch("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { codingDifficulty } = req.body || {};
+
+    if (!["All", "Easy", "Medium", "Hard"].includes(String(codingDifficulty))) {
+      return res.status(400).json({ message: "codingDifficulty must be All, Easy, Medium, or Hard" });
+    }
+
+    const plan = await Plan.findOneAndUpdate(
+      { _id: id, userId: req.user.id },
+      { $set: { codingDifficulty: String(codingDifficulty) } },
+      { new: true }
+    );
+
+    if (!plan) {
+      return res.status(404).json({ message: "Plan not found" });
+    }
+
+    return res.json({ plan });
   } catch (err) {
     return next(err);
   }

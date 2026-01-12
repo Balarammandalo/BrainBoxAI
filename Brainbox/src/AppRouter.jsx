@@ -9,6 +9,9 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MyPlan from "./pages/MyPlan";
+import Market from "./pages/Market";
+import LearningLibrary from "./pages/LearningLibrary";
+import BookReader from "./pages/BookReader";
 
 function PageShell({ children }) {
   return (
@@ -40,6 +43,30 @@ export default function AppRouter() {
           element={
             <RequireAuth>
               <MyPlan />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/market"
+          element={
+            <RequireAuth>
+              <Market />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/library"
+          element={
+            <RequireAuth>
+              <LearningLibrary />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/books/:planId/:bookId"
+          element={
+            <RequireAuth>
+              <BookReader />
             </RequireAuth>
           }
         />

@@ -117,6 +117,16 @@ export default function Navbar() {
             <NavLink to="/my-plan" className={navLinkClass}>
               My Plan
             </NavLink>
+            {user ? (
+              <>
+                <NavLink to="/library" className={navLinkClass}>
+                  Library
+                </NavLink>
+                <NavLink to="/market" className={navLinkClass}>
+                  Market
+                </NavLink>
+              </>
+            ) : null}
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
@@ -234,6 +244,24 @@ export default function Navbar() {
               >
                 My Plan
               </NavLink>
+              {user ? (
+                <>
+                  <NavLink
+                    onClick={() => setMenuOpen(false)}
+                    to="/library"
+                    className={navLinkClass}
+                  >
+                    Library
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setMenuOpen(false)}
+                    to="/market"
+                    className={navLinkClass}
+                  >
+                    Market
+                  </NavLink>
+                </>
+              ) : null}
 
               <button
                 type="button"

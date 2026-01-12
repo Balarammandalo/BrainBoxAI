@@ -42,3 +42,12 @@ export async function apiPatch(path, body) {
   });
   return parseJson(res);
 }
+
+export async function apiPostForm(path, formData) {
+  const res = await fetch(path, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  return parseJson(res);
+}

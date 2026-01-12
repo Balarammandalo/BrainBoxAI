@@ -6,6 +6,8 @@ import cors from "cors";
 import { connectDb } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
+import fileRoutes from "./routes/fileRoutes.js";
+import marketRoutes from "./routes/marketRoutes.js";
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/plans", planRoutes);
+app.use("/api/files", fileRoutes);
+app.use("/api/market", marketRoutes);
 
 app.use((err, req, res, next) => {
   const status = err.statusCode || 500;
