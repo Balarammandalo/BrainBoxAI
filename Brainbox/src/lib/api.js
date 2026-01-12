@@ -1,3 +1,5 @@
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const DEFAULT_HEADERS = {
   "Content-Type": "application/json",
 };
@@ -16,7 +18,7 @@ async function parseJson(res) {
 }
 
 export async function apiGet(path) {
-  const res = await fetch(path, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     method: "GET",
     credentials: "include",
   });
@@ -24,7 +26,7 @@ export async function apiGet(path) {
 }
 
 export async function apiPost(path, body) {
-  const res = await fetch(path, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
     headers: DEFAULT_HEADERS,
     body: JSON.stringify(body ?? {}),
@@ -34,7 +36,7 @@ export async function apiPost(path, body) {
 }
 
 export async function apiPatch(path, body) {
-  const res = await fetch(path, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     method: "PATCH",
     headers: DEFAULT_HEADERS,
     body: JSON.stringify(body ?? {}),
@@ -44,7 +46,7 @@ export async function apiPatch(path, body) {
 }
 
 export async function apiPostForm(path, formData) {
-  const res = await fetch(path, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
     body: formData,
     credentials: "include",
