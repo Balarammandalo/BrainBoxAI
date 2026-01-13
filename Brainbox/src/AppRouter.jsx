@@ -12,6 +12,7 @@ import MyPlan from "./pages/MyPlan";
 import Market from "./pages/Market";
 import LearningLibrary from "./pages/LearningLibrary";
 import BookReader from "./pages/BookReader";
+import VerifyEmail from "./pages/VerifyEmail";
 
 function PageShell({ children }) {
   return (
@@ -37,6 +38,10 @@ export default function AppRouter() {
         <Route
           path="/signup"
           element={user ? <Navigate to="/my-plan" replace /> : <Signup />}
+        />
+        <Route
+          path="/verify-email"
+          element={user ? <Navigate to="/my-plan" replace /> : <VerifyEmail />}
         />
         <Route
           path="/my-plan"

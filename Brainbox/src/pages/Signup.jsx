@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { requestSignupOtp } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,8 +18,13 @@ export default function Signup() {
     setSubmitting(true);
 
     try {
-      await signup({ name, email, password });
-      navigate("/my-plan");
+      const data = await requestSignupOtp({ name, email, password });
+      sessionStorage.setItem("pendingSignupEmail", String(email).trim().toLowerCase());
+      sessionStorage.setItem(
+        "pendingSignupOtpExpiresAt",
+        String(Date.now() + (Number(data?.expiresInSeconds || 600) * 1000)),
+      );
+      navigate("/verify-email", { state: { email, message: data?.message } });
     } catch (err) {
       setError(err.message || "Sign up failed");
     } finally {

@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import dotenv from "dotenv";
+
 
 import { connectDb } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -12,8 +14,10 @@ import codingRoutes from "./routes/codingRoutes.js";
 import booksRoutes from "./routes/booksRoutes.js";
 import learningResourcesRoutes from "./routes/learningResourcesRoutes.js";
 import enhancedPlanRoutes from "./routes/enhancedPlanRoutes.js";
+import mailRoutes from "./routes/mailRoutes.js";
 
 const app = express();
+dotenv.config();
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 const MONGODB_URI =process.env.MONGO_URI;
@@ -35,6 +39,8 @@ app.use(cookieParser());
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
+
+app.use("/api/mail", mailRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/plans", planRoutes);

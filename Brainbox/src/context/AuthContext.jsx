@@ -28,8 +28,13 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
-  async function signup({ name, email, password }) {
-    const data = await apiPost("/api/auth/signup", { name, email, password });
+  async function requestSignupOtp({ name, email, password }) {
+    const data = await apiPost("/api/mail/send-otp", { name, email, password });
+    return data;
+  }
+
+  async function verifySignupOtp({ email, otp }) {
+    const data = await apiPost("/api/mail/verify-otp", { email, otp });
     setUser(data.user);
     return data.user;
   }
@@ -40,7 +45,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ user, setUser, loading, refresh, login, signup, logout }),
+    () => ({ user, setUser, loading, refresh, login, requestSignupOtp, verifySignupOtp, logout }),
     [user, loading],
   );
 

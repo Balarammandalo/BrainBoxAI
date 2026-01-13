@@ -19,31 +19,10 @@ function toPublicUser(user) {
 
 router.post("/signup", async (req, res, next) => {
   try {
-    const { name, email, password } = req.body || {};
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email and password are required" });
-    }
-
-    const existing = await User.findOne({ email: String(email).toLowerCase() });
-    if (existing) {
-      return res.status(409).json({ message: "Email already in use" });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      name,
-      email: String(email).toLowerCase(),
-      passwordHash,
-      learningGoals: [],
-      resumeGoal: false,
+    return res.status(410).json({
+      message:
+        "Email verification is required. Use POST /api/mail/send-otp, then POST /api/mail/verify-otp to complete signup.",
     });
-
-    const token = signToken({ id: user._id });
-    setAuthCookie(res, token);
-
-    return res.status(201).json({ user: toPublicUser(user) });
   } catch (err) {
     return next(err);
   }
