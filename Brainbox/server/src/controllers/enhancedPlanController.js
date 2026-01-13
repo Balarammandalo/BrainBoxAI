@@ -1,5 +1,49 @@
 import Plan from "../models/Plan.js";
 import axios from "axios";
+import User from "../models/User.js";
+import { transporter } from "../config/mail.js";
+
+export const planEmailTemplate = (plan) => {
+  return `
+    <h2>📘 Your AI Study Plan</h2>
+    <p><b>Skill:</b> ${plan.skill}</p>
+    <p><b>Duration:</b> ${plan.duration}</p>
+    <p><b>Daily Study:</b> ${plan.dailyTime}</p>
+
+    <h3>📅 Weekly Plan</h3>
+    <ul>
+      ${plan.weeks.map((w) => `<li>${w}</li>`).join("")}
+    </ul>
+
+    <h3>📚 Resources</h3>
+    <ul>
+      ${plan.resources.map((r) => `<li>${r}</li>`).join("")}
+    </ul>
+
+    <p>🔥 Stay consistent – BrainBox AI</p>
+  `;
+};
+
+function buildEmailPlanView(planDoc) {
+  const weeks = Array.isArray(planDoc.planStructure)
+    ? planDoc.planStructure.map((m) => m.title).filter(Boolean)
+    : [];
+
+  const resources = Array.isArray(planDoc.planStructure)
+    ? planDoc.planStructure
+        .flatMap((m) => (Array.isArray(m.topics) ? m.topics : []))
+        .filter(Boolean)
+        .slice(0, 25)
+    : [];
+
+  return {
+    skill: planDoc.skill || planDoc.goal,
+    duration: planDoc.duration || planDoc.timeToComplete,
+    dailyTime: planDoc.dailyTime || planDoc.dailyStudyTime,
+    weeks,
+    resources,
+  };
+}
 
 // Generate plan structure using ChatGPT
 async function generatePlanStructure(topic, durationMonths) {
@@ -71,6 +115,12 @@ export async function generateEnhancedPlan(req, res) {
     const { goal, timeToComplete, dailyStudyTime, resourceTypes } = req.body;
     const userId = req.user.id;
 
+    if (!goal || !timeToComplete || !dailyStudyTime) {
+      return res
+        .status(400)
+        .json({ message: "goal, timeToComplete, dailyStudyTime are required" });
+    }
+
     // Extract duration in months
     const durationMonths = parseInt(timeToComplete) || 3;
     
@@ -92,17 +142,46 @@ export async function generateEnhancedPlan(req, res) {
 
     await plan.save();
 
+    let emailSent = false;
+    let message = "Your personalized study plan is ready.";
+
+    try {
+      const user = await User.findById(userId);
+      if (user?.email) {
+        const html = planEmailTemplate(buildEmailPlanView(plan));
+
+        await transporter.sendMail({
+          from: `"BrainBox" <${process.env.EMAIL_USER}>`,
+          to: user.email,
+          subject: "Your BrainBox AI Study Plan is Ready 🚀",
+          html,
+        });
+
+        emailSent = true;
+        message = "Your study plan has been sent to your email 📩";
+      } else {
+        message = "Plan saved, but could not send email (user email not found).";
+      }
+    } catch (mailErr) {
+      console.error("Failed to send plan email:", mailErr);
+      message = "Plan saved, but email delivery failed.";
+    }
+
     // Generate resources for each type
-    if (resourceTypes.includes('books')) {
+    if (Array.isArray(resourceTypes) && resourceTypes.includes('books')) {
       // Books will be loaded on demand
     }
     
-    if (resourceTypes.includes('video')) {
+    if (Array.isArray(resourceTypes) && resourceTypes.includes('video')) {
       // Generate video resources
       await generateVideoResources(plan._id, goal);
     }
 
-    res.status(201).json({ plan });
+    res.status(201).json({
+      plan,
+      emailSent,
+      message,
+    });
   } catch (error) {
     console.error("Error generating enhanced plan:", error);
     res.status(500).json({ message: "Failed to generate plan" });

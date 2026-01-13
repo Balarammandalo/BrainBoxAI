@@ -20,6 +20,7 @@ export default function MyPlan() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [generateStatus, setGenerateStatus] = useState(null);
 
   const [activeTabByPlanId, setActiveTabByPlanId] = useState({});
 
@@ -84,6 +85,7 @@ export default function MyPlan() {
   async function onGenerate(e) {
     e.preventDefault();
     setError("");
+    setGenerateStatus(null);
     setSubmitting(true);
 
     try {
@@ -95,6 +97,12 @@ export default function MyPlan() {
       });
       setPlans((prev) => [data.plan, ...prev]);
       setGoal("");
+
+      setGenerateStatus({
+        planSaved: true,
+        emailSent: !!data.emailSent,
+        message: data.message || "Your personalized study plan has been emailed to you.",
+      });
 
       if (user && data.plan?.goal) {
         const nextGoals = Array.from(
@@ -124,6 +132,16 @@ export default function MyPlan() {
             onSubmit={onGenerate}
             className="mt-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/60"
           >
+            {generateStatus ? (
+              <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <p>{generateStatus.message}</p>
+                <div className="mt-2 grid gap-1 text-xs font-semibold">
+                  <p>{generateStatus.planSaved ? "✔ Plan saved" : "… Plan saving"}</p>
+                  <p>{generateStatus.emailSent ? "✔ Email sent" : "… Email sending"}</p>
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
