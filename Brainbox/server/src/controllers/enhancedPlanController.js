@@ -126,6 +126,13 @@ export async function generateEnhancedPlan(req, res) {
     
     // Generate plan structure
     const { planStructure } = await generatePlanStructure(goal, durationMonths);
+
+    const months = Array.isArray(planStructure)
+      ? planStructure.map((m, idx) => ({
+          month: Number(m.month || idx + 1),
+          topics: Array.isArray(m.topics) ? m.topics : [],
+        }))
+      : [];
     
     // Create the plan with enhanced structure
     const plan = new Plan({
@@ -136,6 +143,9 @@ export async function generateEnhancedPlan(req, res) {
       resourceTypes,
       skill: goal,
       duration: timeToComplete,
+      dailyTime: dailyStudyTime,
+      months,
+      completedMonths: [],
       planStructure,
       progressPercent: 0,
     });

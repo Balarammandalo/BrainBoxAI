@@ -9,8 +9,12 @@ export default function LearningResources({ plan }) {
 
   useEffect(() => {
     if (plan) {
-      // Load existing resources from plan
-      const existingResources = plan.resourcesByType?.learningResources || [];
+      const fromCanonical = (plan.resources || []).filter(
+        (r) => r && typeof r === "object" && r.topic && Array.isArray(r.links)
+      );
+      const fromLegacy = plan.resourcesByType?.learningResources || [];
+
+      const existingResources = fromCanonical.length ? fromCanonical : fromLegacy;
       if (existingResources.length > 0) {
         setResources(existingResources);
       } else {
@@ -28,10 +32,8 @@ export default function LearningResources({ plan }) {
       const data = await apiGet(`/api/learning-resources?topic=${encodeURIComponent(topic)}`);
       setResources([data]);
       
-      // Update plan with generated resources
-      await apiPost("/api/learning-resources/update-plan", {
-        planId: plan._id,
-        topic
+      await apiPost(`/api/plans/${plan._id}/resources`, {
+        resources: [data],
       });
     } catch (err) {
       setError(err.message || "Failed to load learning resources");

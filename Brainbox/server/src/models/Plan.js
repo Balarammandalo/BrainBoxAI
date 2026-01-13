@@ -68,12 +68,20 @@ const todoItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const monthSchema = new mongoose.Schema(
+  {
+    month: { type: Number, required: true },
+    topics: { type: [String], default: [] },
+  },
+  { _id: false }
+);
+
 const learningResourceSchema = new mongoose.Schema(
   {
     topic: { type: String, required: true },
     links: [
       {
-        platform: { type: String, required: true }, // GeeksForGeeks, W3Schools, MDN, etc.
+        platform: { type: String, required: true }, 
         title: { type: String, required: true },
         url: { type: String, required: true },
         description: { type: String, default: "" },
@@ -90,6 +98,9 @@ const planSchema = new mongoose.Schema(
     skill: { type: String, trim: true, default: "" },
     duration: { type: String, default: "" },
     dailyTime: { type: String, default: "" },
+
+    months: { type: [monthSchema], default: [] },
+    completedMonths: { type: [Number], default: [] },
     resourceTypes: { type: [String], default: [] },
     codingDifficulty: {
       type: String,
@@ -112,20 +123,12 @@ const planSchema = new mongoose.Schema(
     // Progress tracking
     progressPercent: { type: Number, default: 0 },
     
-    goal: { type: String, required: true, trim: true },
-    timeToComplete: { type: String, required: true },
-    dailyStudyTime: { type: String, required: true },
+    goal: { type: String, trim: true, default: "" },
+    timeToComplete: { type: String, default: "" },
+    dailyStudyTime: { type: String, default: "" },
     topics: { type: [String], default: [] },
     notes: { type: [String], default: [] },
-    resources: {
-      type: [
-        {
-          title: String,
-          url: String,
-        },
-      ],
-      default: [],
-    },
+    resources: { type: [mongoose.Schema.Types.Mixed], default: [] },
     schedule: {
       type: [
         {

@@ -45,6 +45,15 @@ export default function MyPlan() {
     }
   }
 
+  function computeProgressPercent(plan) {
+    const months = Array.isArray(plan?.months) ? plan.months : [];
+    const completed = Array.isArray(plan?.completedMonths) ? plan.completedMonths : [];
+    if (months.length) {
+      return Math.round((completed.length / months.length) * 100);
+    }
+    return Number(plan?.progressPercent || 0);
+  }
+
   useEffect(() => {
     loadPlans();
   }, []);
@@ -314,12 +323,12 @@ export default function MyPlan() {
                       <div className="mt-3">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold text-slate-600 dark:text-slate-300">Progress</span>
-                          <span className="font-bold text-indigo-600">{p.progressPercent || 0}%</span>
+                          <span className="font-bold text-indigo-600">{computeProgressPercent(p)}%</span>
                         </div>
                         <div className="mt-1 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700">
                           <div 
                             className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 transition-all duration-500"
-                            style={{ width: `${p.progressPercent || 0}%` }}
+                            style={{ width: `${computeProgressPercent(p)}%` }}
                           />
                         </div>
                       </div>

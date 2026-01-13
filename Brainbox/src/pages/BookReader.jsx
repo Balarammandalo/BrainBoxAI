@@ -8,7 +8,7 @@ export default function BookReader() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [plans, setPlans] = useState([]);
+  const [plan, setPlan] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -17,8 +17,8 @@ export default function BookReader() {
       setLoading(true);
       setError("");
       try {
-        const data = await apiGet("/api/plans");
-        if (mounted) setPlans(data.plans || []);
+        const data = await apiGet(`/api/plans/${planId}`);
+        if (mounted) setPlan(data.plan || null);
       } catch (err) {
         if (mounted) setError(err.message || "Failed to load plans");
       } finally {
@@ -33,7 +33,6 @@ export default function BookReader() {
     };
   }, []);
 
-  const plan = useMemo(() => plans.find((p) => p._id === planId) || null, [plans, planId]);
   const pdf = useMemo(
     () => (plan?.pdfFiles || []).find((f) => String(f.id) === String(bookId)) || null,
     [plan, bookId]

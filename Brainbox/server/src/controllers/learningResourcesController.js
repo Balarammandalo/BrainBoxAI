@@ -1,4 +1,5 @@
 import axios from "axios";
+import Plan from "../models/Plan.js";
 
 async function generateLearningLinks(topic) {
   try {
@@ -122,16 +123,23 @@ export async function updatePlanWithResources(req, res) {
     }
 
     const resources = await generateLearningLinks(topic);
-    
-    // Update plan with learning resources
-    const Plan = require('../models/Plan');
-    await Plan.findByIdAndUpdate(planId, {
-      $push: {
-        'resourcesByType.learningResources': resources
-      }
-    });
 
-    res.json({ success: true, resources });
+    const plan = await Plan.findOneAndUpdate(
+      { _id: planId, userId: req.user.id },
+      {
+        $push: {
+          resources: resources,
+          "resourcesByType.learningResources": resources,
+        },
+      },
+      { new: true }
+    );
+
+    if (!plan) {
+      return res.status(404).json({ message: "Plan not found" });
+    }
+
+    res.json({ success: true, resources, plan });
   } catch (error) {
     console.error("Error updating plan with resources:", error);
     res.status(500).json({ message: "Failed to update plan with resources" });

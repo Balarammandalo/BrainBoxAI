@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { apiGet, apiPost } from "../lib/api";
+import { apiGet } from "../lib/api";
 
 export default function BooksAndPdfs({ plan }) {
   const [books, setBooks] = useState([]);
-  const [interviewPdfs, setInterviewPdfs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -18,10 +17,18 @@ export default function BooksAndPdfs({ plan }) {
     setLoading(true);
     setError("");
     try {
+      const canonicalBookResources = (plan.resources || []).filter(
+        (r) => r && typeof r === "object" && (r.type === "book" || r.kind === "book")
+      );
+
+      if (canonicalBookResources.length) {
+        setBooks(canonicalBookResources);
+        return;
+      }
+
       const topic = plan.skill || plan.goal;
       const data = await apiGet(`/api/books?topic=${encodeURIComponent(topic)}`);
       setBooks(data.books || []);
-      setInterviewPdfs(data.interviewPdfs || []);
     } catch (err) {
       setError(err.message || "Failed to load books");
     } finally {
@@ -29,24 +36,33 @@ export default function BooksAndPdfs({ plan }) {
     }
   }
 
-  async function generateInterviewPdf() {
-    setGeneratingPdf(true);
+  async function downloadPlanPdf() {
+    setDownloadingPdf(true);
     try {
-      const topic = plan.skill || plan.goal;
-      const data = await apiPost("/api/books/generate-interview", {
-        topic,
-        planId: plan._id
+      const res = await fetch(`/api/plans/${plan._id}/pdf`, {
+        method: "GET",
+        credentials: "include",
       });
-      
-      // Refresh the plan to get the new PDF
-      if (data.success) {
-        alert("Interview PDF generated successfully!");
-        // You can refresh the plan data here
+
+      if (!res.ok) {
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : null;
+        throw new Error(data?.message || `Failed to download PDF (${res.status})`);
       }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "plan.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.message || "Failed to generate interview PDF");
+      setError(err.message || "Failed to download PDF");
     } finally {
-      setGeneratingPdf(false);
+      setDownloadingPdf(false);
     }
   }
 
@@ -65,11 +81,11 @@ export default function BooksAndPdfs({ plan }) {
           </div>
           
           <button
-            onClick={generateInterviewPdf}
-            disabled={generatingPdf}
+            onClick={downloadPlanPdf}
+            disabled={downloadingPdf}
             className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {generatingPdf ? "Generating..." : "📄 Download Interview Questions"}
+            {downloadingPdf ? "Preparing..." : "📄 Download Interview PDF"}
           </button>
         </div>
       </div>
@@ -150,41 +166,6 @@ export default function BooksAndPdfs({ plan }) {
             )}
           </div>
 
-          {/* Interview PDFs Section */}
-          <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/60">
-            <h4 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-              📋 Interview Preparation PDFs
-            </h4>
-            
-            {interviewPdfs.length === 0 ? (
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Click "Generate Interview Questions" to create custom interview PDFs.
-              </p>
-            ) : (
-              <div className="grid gap-3">
-                {interviewPdfs.map((pdf, index) => (
-                  <div
-                    key={index}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h5 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {pdf.title}
-                        </h5>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          {pdf.description}
-                        </p>
-                      </div>
-                      <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700">
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </>
       )}
     </div>
